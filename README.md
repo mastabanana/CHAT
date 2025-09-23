@@ -1,201 +1,214 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Scaledrone Chat</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Chatroom</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: sans-serif;
-            background-color: #f5f5f5;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .chat-container {
-            width: 100%;
-            max-width: 600px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            height: 100%;
+        body { 
+            font-family: 'Source Code Pro', monospace; 
+            margin: 0; 
+            padding: 10px; 
+            background-color: #000; 
+            color: #0f0; 
             overflow: hidden;
+            position: absolute;
+            top: 0;
+            left: 0;
+            font-size: 10px;
         }
-        .messages {
-            flex-grow: 1;
-            padding: 20px;
-            overflow-y: auto;
-            border-bottom: 1px solid #eee;
+        .container { 
+            max-width: 900px; 
+            margin: 0; 
+            padding: 0; 
+            background: transparent; 
+            box-shadow: none;
         }
-        .message {
-            margin-bottom: 15px;
+        .messages { 
+            list-style-type: none; 
+            padding: 0; 
+            margin-bottom: 5px; 
+            max-height: 90vh;
+            overflow-y: auto; 
+            border: none;
+        }
+        .message { 
+            padding: 2px 0; 
+            margin-bottom: 2px; 
+            border-radius: 0; 
+            border: none;
+        }
+        .own-message, .other-message { 
+            background-color: transparent; 
+            text-align: left; 
+        }
+        .username { 
+            font-weight: bold; 
+        }
+        .message-content { 
+            word-wrap: break-word; 
+        }
+        .prompt-container {
             display: flex;
-            align-items: flex-start;
-        }
-        .message .avatar {
-            width: 30px;
-            height: 30px;
-            background-color: #4CAF50;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
             align-items: center;
-            font-weight: bold;
-            flex-shrink: 0;
-            margin-right: 10px;
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            width: calc(100% - 20px);
         }
-        .message .content {
-            background: #e9e9eb;
-            padding: 10px 15px;
-            border-radius: 20px;
-            max-width: 80%;
+        .prompt-container input { 
+            flex-grow: 1; 
+            border: none; 
+            padding: 5px 0; 
+            border-radius: 0; 
+            background-color: transparent;
+            color: #0f0;
+            font-family: 'Source Code Pro', monospace;
+            font-size: 10px;
+            outline: none;
+            caret-color: transparent; /* Hide native cursor */
         }
-        .message.own .avatar {
-            order: 2;
-            margin-right: 0;
-            margin-left: 10px;
-            background-color: #2196F3;
+        .prompt-container span.blinking-cursor {
+            color: #0f0;
+            animation: blink 1s step-end infinite;
         }
-        .message.own .content {
-            background: #2196F3;
-            color: white;
-            order: 1;
+        @keyframes blink {
+            from, to { opacity: 0; }
+            50% { opacity: 1; }
         }
-        .message-form {
-            display: flex;
-            padding: 15px;
-            border-top: 1px solid #eee;
-        }
-        .message-form input[type="text"] {
-            flex-grow: 1;
-            border: 1px solid #ddd;
-            border-radius: 20px;
-            padding: 10px 15px;
-            margin-right: 10px;
-        }
-        .message-form button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 20px;
-            cursor: pointer;
-        }
-        .message-form button:hover {
-            background: #45a049;
-        }
-        .username-prompt {
-            padding: 20px;
-            text-align: center;
-        }
-        .username-prompt input {
-            padding: 8px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        .username-prompt button {
-            padding: 8px 12px;
-            border-radius: 5px;
-            border: none;
-            background-color: #007bff;
-            color: white;
-            cursor: pointer;
-        }
-        .username-prompt button:hover {
-            background-color: #0056b3;
+        .welcome-text {
+            color: #0f0;
+            padding: 2px 0;
+            margin-bottom: 2px;
         }
     </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="username-prompt" id="username-prompt">
-            <h2>Enter your custom username</h2>
-            <input type="text" id="username-input" placeholder="Your username">
-            <button onclick="setUsername()">Start Chatting</button>
+    <div class="container">
+        <ul id="messages" class="messages"></ul>
+        <div class="prompt-container">
+            <div id="username-prompt" style="display: block;">
+                <span id="prompt-text">user@local:&nbsp;</span>
+                <input id="username-input" type="text" autofocus>
+                <span id="username-cursor" class="blinking-cursor">█</span>
+            </div>
+            <div id="chat-prompt" style="display: none;">
+                <span id="chat-prompt-text">$&nbsp;</span>
+                <input id="message-input" type="text">
+                <span id="chat-cursor" class="blinking-cursor">█</span>
+            </div>
         </div>
-        <div class="messages" id="messages"></div>
-        <form class="message-form" id="message-form">
-            <input type="text" id="message-input" placeholder="Type a message..." disabled>
-            <button type="submit" disabled>Send</button>
-        </form>
     </div>
 
+    <!-- Scaledrone client library -->
     <script src="https://cdn.scaledrone.com/scaledrone.min.js"></script>
+
     <script>
-        const CHANNEL_ID = '43VnIkeRto0nANvC'; // Replace with your Channel ID
-        const ROOM_NAME = 'observable-custom-chat';
+        const CHANNEL_ID = 't9OHWbkbZdHg7tCb';
+        let drone = null;
+        let room = null;
+        let me = {};
 
-        let drone;
-        let username;
+        const messagesList = document.getElementById('messages');
+        const usernameInput = document.getElementById('username-input');
+        const messageInput = document.getElementById('message-input');
+        const usernamePrompt = document.getElementById('username-prompt');
+        const chatPrompt = document.getElementById('chat-prompt');
 
-        function setUsername() {
-            username = document.getElementById('username-input').value;
-            if (!username) {
-                alert('Please enter a username.');
-                return;
-            }
+        function joinChat(username) {
+            me = {
+                id: Math.random().toString(36).substring(2, 15),
+                name: username
+            };
 
-            document.getElementById('username-prompt').style.display = 'none';
-            document.getElementById('message-input').disabled = false;
-            document.querySelector('.message-form button').disabled = false;
+            usernamePrompt.style.display = 'none';
+            chatPrompt.style.display = 'flex'; // Use flex to align prompt and input
+            messageInput.focus();
 
-            drone = new ScaleDrone(CHANNEL_ID, {
-                data: {
-                    name: username
-                }
-            });
+            drone = new ScaleDrone(CHANNEL_ID, { data: me });
 
             drone.on('open', error => {
                 if (error) {
-                    console.error(error);
+                    return console.error(error);
                 }
-                const room = drone.subscribe(ROOM_NAME);
-                room.on('data', (data, member) => {
-                    displayMessage(data, member);
+                
+                addMessageToScreen('Connection established. Type your messages below.', 'system');
+                
+                room = drone.subscribe('general-chat');
+                room.on('data', (message, client) => {
+                    const isOwnMessage = client && client.id === drone.clientId;
+                    addMessageToScreen(message.content, message.sender, isOwnMessage);
                 });
             });
+        }
 
-            document.getElementById('message-form').addEventListener('submit', (event) => {
-                event.preventDefault();
-                const input = document.getElementById('message-input');
-                const message = input.value;
-                if (message.trim()) {
-                    drone.publish({
-                        room: ROOM_NAME,
-                        message: message
-                    });
-                    input.value = '';
+        function sendMessage() {
+            const messageText = messageInput.value.trim();
+            if (messageText) {
+                drone.publish({
+                    room: 'general-chat',
+                    message: {
+                        content: messageText,
+                        sender: me.name
+                    }
+                });
+                messageInput.value = '';
+            }
+        }
+
+        function addMessageToScreen(content, sender, isOwnMessage) {
+            const messageElement = document.createElement('li');
+            messageElement.classList.add('message');
+            
+            const usernameSpan = document.createElement('span');
+            usernameSpan.classList.add('username');
+            usernameSpan.textContent = sender + ": ";
+            
+            const messageContentSpan = document.createElement('span');
+            messageContentSpan.classList.add('message-content');
+            messageContentSpan.textContent = content;
+
+            if (!isOwnMessage) {
+                 messageElement.appendChild(usernameSpan);
+            }
+
+            messageElement.appendChild(messageContentSpan);
+            messagesList.appendChild(messageElement);
+            messagesList.scrollTop = messagesList.scrollHeight;
+        }
+        
+        // Handle initial username submission
+        usernameInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                const username = this.value.trim();
+                if (username) {
+                    addMessageToScreen(username, 'user@local');
+                    joinChat(username);
                 }
-            });
+            }
+        });
+
+        // Handle sending messages
+        messageInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Toggle cursor visibility based on input focus
+        function handleInputFocus(input, cursor) {
+            input.addEventListener('focus', () => cursor.style.display = 'inline');
+            input.addEventListener('blur', () => cursor.style.display = 'none');
         }
 
-        function displayMessage(data, member) {
-            const messagesEl = document.getElementById('messages');
-            const isOwnMessage = member.clientData.name === username;
+        handleInputFocus(usernameInput, document.getElementById('username-cursor'));
+        handleInputFocus(messageInput, document.getElementById('chat-cursor'));
 
-            const messageEl = document.createElement('div');
-            messageEl.className = `message ${isOwnMessage ? 'own' : ''}`;
-
-            const avatarEl = document.createElement('div');
-            avatarEl.className = 'avatar';
-            avatarEl.textContent = member.clientData.name.charAt(0);
-
-            const contentEl = document.createElement('div');
-            contentEl.className = 'content';
-            contentEl.textContent = `${member.clientData.name}: ${data}`;
-
-            messageEl.appendChild(avatarEl);
-            messageEl.appendChild(contentEl);
-
-            messagesEl.appendChild(messageEl);
-            messagesEl.scrollTop = messagesEl.scrollHeight;
-        }
+        // Initial welcome message
+        addMessageToScreen('Welcome to the terminal chatroom.', 'system');
+        addMessageToScreen('Please enter your username to join.', 'system');
     </script>
 </body>
 </html>
+
